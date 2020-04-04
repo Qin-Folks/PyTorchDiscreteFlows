@@ -55,12 +55,34 @@ plt.show()
 pre_net = PreNet()
 
 epochs = 500
-lr_rate = 0.0001
+lr_rate = 0.001
+print_loss_every = 20
+
+optimizer = torch.optim.Adam(pre_net.parameters(), lr=lr_rate)
 
 for a_e in range(epochs):
+    optimizer.zero_grad()
     x = torch.tensor(oh_sample(batch_size)).float()
-    x = x.view(x.shape[0], -1)
-    pre_out = pre_net(x)
-    pre_out_reshape = pre_out.view(batch_size, 2, -1)
-    base_ = torch.distributions.OneHotCategorical(probs=pre_out_reshape)
+    x_reshape = x.view(x.shape[0], -1)
+    pre_out = pre_net(x_reshape)
+    log_prob_sum = 0
 
+    for pre_idx, a_pre_out in enumerate(pre_out):
+        a_base = torch.distributions.OneHotCategorical(probs=a_pre_out)
+        a_log_prob = a_base.log_prob(x[pre_idx])
+        log_prob_sum += torch.sum(a_log_prob)
+
+    pre_loss = -log_prob_sum
+    pre_loss.backward()
+    optimizer.step()
+    if a_e % print_loss_every == 0:
+        print('epoch:', a_e, 'loss:', pre_loss.item())
+
+    # base_ = torch.distributions.OneHotCategorical(probs=pre_out_reshape)
+    # base_log_prob = base_.log_prob(x)
+
+print('Concluded')
+print('x: ', x[0])
+pre_out = pre_net(x_reshape)
+pre_out_reshape = pre_out.view(batch_size, 2, -1)
+print('pre_out_reshape: ', pre_out_reshape[0])
