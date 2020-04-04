@@ -91,7 +91,9 @@ for a_e in range(epochs):
     loss.backward()
     optimizer.step()
     if a_e % print_loss_every == 0:
-        print('epoch:', a_e, 'pre loss:', pre_loss.item(), 'flow loss: ', flow_loss.item(), 'loss: ', loss.item())
+        print('epoch:', a_e, 'pre loss:', pre_loss.item()/batch_size, 'flow loss: ', flow_loss.item()/batch_size,
+              'loss: ', loss.item()/batch_size,
+              'negative prior z log prob: ', -torch.sum(prior_z.log_prob(z)).item()/batch_size)
 
     # base_ = torch.distributions.OneHotCategorical(probs=pre_out_reshape)
     # base_log_prob = base_.log_prob(x)
