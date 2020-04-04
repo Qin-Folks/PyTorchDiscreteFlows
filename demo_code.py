@@ -47,8 +47,7 @@ def oh_sample(batch_size):
 
 
 samps = oh_sample(10000).argmax(-1)
-print('samps: ', samps[:10])
-plt.figure(figsize=(5,5))
+plt.figure(figsize=(5, 5))
 plt.scatter(samps[:,0], samps[:,1])
 
 num_flows = 6 # number of flow steps. This is different to the number of layers used inside each flow
@@ -112,14 +111,18 @@ for k, v in mod_data_dim0.items():
 for k, v in mod_data_dim1.items():
     dim1_probs[k] = (v/n_samps)
 
+# 在这里算出来的是每一个one hot可能性的probability.
+
 dim0_probs += 0.000001
 dim1_probs += 0.000001
 
 # need to renormalize again...
+# 在这里做了一些smoothing
 dim0_probs = dim0_probs / np.sum(dim0_probs)
 dim1_probs = dim1_probs / np.sum(dim1_probs)
 
 mod_data_probs = np.vstack([dim0_probs, dim1_probs])
+print('mod data probs: ', mod_data_probs.shape)
 
 base = torch.distributions.OneHotCategorical(probs = torch.tensor(mod_data_probs).float() )
 samps = base.sample((10000,)).argmax(-1)
@@ -163,6 +166,7 @@ model.eval()
 x = torch.tensor(oh_sample(batch_size)).float()
 if disc_layer_type == 'bipartite':
     x = x.view(batch_size, -1)
+x_cp = x.clone()
 zs = model.forward(x)
 z = zs
 if disc_layer_type == 'bipartite':
@@ -182,12 +186,13 @@ plt.axis('scaled')
 plt.title('x -> z')
 plt.xlim([0,vocab_size])
 plt.ylim([0,vocab_size])
+plt.show()
 
 if disc_layer_type == 'bipartite':
-    z = model.reverse(base.sample((batch_size,)).float().view(batch_size, -1))
+    z = model.reverse(x_cp)
     z = z.view(batch_size, 2, -1)
 else:
-    z = model.reverse(base.sample((batch_size,)).float())
+    z = model.reverse(x_cp)
 z = z.detach().numpy().argmax(-1)
 plt.subplot(122)
 plt.scatter(x[:,0], x[:,1], c='b', s=5, alpha=0.5)
@@ -198,3 +203,4 @@ plt.title('z -> x')
 plt.xlim([0,vocab_size])
 plt.ylim([0,vocab_size])
 plt.gcf().savefig('DemoResult.png', dpi=250)
+plt.show()
